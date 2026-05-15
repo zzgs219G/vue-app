@@ -1,47 +1,107 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
+import { ref, onMounted } from 'vue';
+import type { Category, Resource } from './types';
+import { getCategories, getResources } from './api';
+
+import Header from './components/Header.vue';
+import CategoryList from './components/CategoryList.vue';
+import ResourceCard from './components/ResourceCard.vue';
+
+/**
+ * 根组件 App.vue
+ * 所有的状态管理（分类、资源列表、加载状态）都在这里，不使用 Vue Router。
+ * 这样的结构非常扁平，适合在手机上快速查看和修改代码。
+ */
+
+// 状态定义
+const categories = ref<Category[]>([]);
+const resources = ref<Resource[]>([]);
+const activeCategoryId = ref<string>('all');
+const isLoading = ref<boolean>(true);
+
+// 初始化加载数据
+onMounted(async () => {
+  try {
+    isLoading.value = true;
+
+    // 并发请求分类和全部资源
+    const [cats, res] = await Promise.all([
+      getCategories(),
+      getResources('all')
+    ]);
+
+    categories.value = cats;
+    resources.value = res;
+
+  } catch (error) {
+    console.error('加载数据失败:', error);
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+// 处理分类切换
+const handleCategorySelect = async (categoryId: string) => {
+  if (activeCategoryId.value === categoryId) return;
+
+  activeCategoryId.value = categoryId;
+  isLoading.value = true;
+
+  try {
+    // 根据选中的分类拉取对应的资源数据
+    resources.value = await getResources(categoryId);
+  } catch (error) {
+    console.error('切换分类失败:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
+  <div class="min-h-screen flex flex-col">
+    <!-- 顶部导航 -->
+    <Header />
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+    <!-- 分类筛选栏 -->
+    <div class="bg-white/80 backdrop-blur-md sticky top-[76px] md:top-[88px] z-10 border-b border-gray-100">
+      <CategoryList
+        :categories="categories"
+        :active-category-id="activeCategoryId"
+        @select="handleCategorySelect"
+      />
     </div>
-  </header>
 
-  <main>
-    <TheWelcome />
-  </main>
+    <!-- 主体内容区 -->
+    <main class="flex-grow p-4 max-w-5xl mx-auto w-full">
+
+      <!-- 加载中状态 -->
+      <div v-if="isLoading" class="flex justify-center items-center py-20">
+        <div class="animate-pulse flex flex-col items-center">
+          <div class="h-8 w-8 bg-indigo-200 rounded-full mb-4"></div>
+          <p class="text-gray-400 text-sm">正在加载资源...</p>
+        </div>
+      </div>
+
+      <!-- 资源网格列表 -->
+      <div v-else-if="resources.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4">
+        <ResourceCard
+          v-for="resource in resources"
+          :key="resource.id"
+          :resource="resource"
+        />
+      </div>
+
+      <!-- 空状态 -->
+      <div v-else class="text-center py-20 text-gray-500">
+        <p>该分类下暂无资源。</p>
+      </div>
+
+    </main>
+
+    <!-- 简易页脚 -->
+    <footer class="bg-white py-6 text-center text-xs text-gray-400 mt-10">
+      <p>© 2026 资源聚合网. Powered by Vue 3 & Vite.</p>
+    </footer>
+  </div>
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
-</style>
