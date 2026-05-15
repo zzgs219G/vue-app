@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Resource } from '../types';
 
 /**
@@ -6,15 +7,32 @@ import type { Resource } from '../types';
  * 展示单个蓝奏云资源的信息，包括快速复制密码和跳转链接
  */
 
-defineProps<{
+const props = defineProps<{
   resource: Resource;
 }>();
 
-// 简单的复制密码功能
+/**
+ * 判断是否为新资源 (最近 7 天)
+ */
+const isNew = computed(() => {
+  const createdDate = new Date(props.resource.createdAt);
+  const diffTime = Math.abs(new Date().getTime() - createdDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays <= 7;
+});
+
+const emit = defineEmits<{
+  (e: 'copy', text: string): void;
+}>();
+
+/**
+ * 复制密码功能
+ * 复制到剪贴板并向父组件发送通知事件
+ */
 const copyPassword = async (pwd: string) => {
   try {
     await navigator.clipboard.writeText(pwd);
-    alert('提取码已复制: ' + pwd);
+    emit('copy', '提取码已复制');
   } catch (err) {
     console.error('复制失败:', err);
   }
@@ -25,10 +43,16 @@ const copyPassword = async (pwd: string) => {
   <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col h-full">
 
     <!-- 头部：标题和分类标签 -->
-    <div class="flex justify-between items-start mb-3">
+    <div class="flex justify-between items-start mb-3 gap-2">
       <h3 class="text-lg font-bold text-gray-800 line-clamp-2 leading-tight">
         {{ resource.title }}
       </h3>
+      <span
+        v-if="isNew"
+        class="flex-shrink-0 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+      >
+        NEW
+      </span>
     </div>
 
     <!-- 描述 -->

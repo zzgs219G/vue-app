@@ -61,7 +61,7 @@ const mockResources: Resource[] = [
 
 /**
  * 获取所有分类列表
- * 后期替换为： return fetch('/api/categories').then(res => res.json())
+ * 此处以后替换为 API 链接： return fetch('/api/categories').then(res => res.json())
  */
 export async function getCategories(): Promise<Category[]> {
   // 模拟网络延迟
@@ -74,7 +74,7 @@ export async function getCategories(): Promise<Category[]> {
 
 /**
  * 获取资源列表
- * 后期替换为： return fetch(`/api/resources?categoryId=${categoryId}`).then(res => res.json())
+ * 此处以后替换为 API 链接： return fetch(`/api/resources?categoryId=${categoryId}`).then(res => res.json())
  * @param categoryId - 可选，如果不传或传 'all' 则返回所有资源
  */
 export async function getResources(categoryId: string = 'all'): Promise<Resource[]> {
