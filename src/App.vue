@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Category, Resource } from './types';
 import { getCategories, getResources } from './api';
 
 import Header from './components/Header.vue';
 import CategoryList from './components/CategoryList.vue';
 import ResourceCard from './components/ResourceCard.vue';
+import Toast from './components/Toast.vue';
 
 /**
  * 根组件 App.vue
@@ -17,9 +18,47 @@ import ResourceCard from './components/ResourceCard.vue';
 const categories = ref<Category[]>([]);
 const resources = ref<Resource[]>([]);
 const activeCategoryId = ref<string>('all');
+const searchQuery = ref<string>('');
 const isLoading = ref<boolean>(true);
 
-// 初始化加载数据
+// Toast 状态
+const showToast = ref(false);
+const toastMessage = ref('');
+
+/**
+ * 触发 Toast 提示
+ */
+const triggerToast = (msg: string) => {
+  toastMessage.value = msg;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 2000);
+};
+
+/**
+ * 过滤后的资源列表
+ * 根据搜索关键词和当前分类进行实时过滤
+ */
+const filteredResources = computed(() => {
+  let result = resources.value;
+
+  // 搜索过滤
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim();
+    result = result.filter(res =>
+      res.title.toLowerCase().includes(query) ||
+      res.description.toLowerCase().includes(query)
+    );
+  }
+
+  return result;
+});
+
+/**
+ * 组件初始化加载数据
+ * 此处以后替换为 API 链接
+ */
 onMounted(async () => {
   try {
     isLoading.value = true;
@@ -40,7 +79,11 @@ onMounted(async () => {
   }
 });
 
-// 处理分类切换
+/**
+ * 处理分类切换逻辑
+ * 此处以后替换为 API 链接
+ * @param categoryId 选中的分类ID
+ */
 const handleCategorySelect = async (categoryId: string) => {
   if (activeCategoryId.value === categoryId) return;
 
@@ -61,7 +104,7 @@ const handleCategorySelect = async (categoryId: string) => {
 <template>
   <div class="min-h-screen flex flex-col">
     <!-- 顶部导航 -->
-    <Header />
+    <Header v-model="searchQuery" />
 
     <!-- 分类筛选栏 -->
     <div class="bg-white/80 backdrop-blur-md sticky top-[76px] md:top-[88px] z-10 border-b border-gray-100">
@@ -84,13 +127,19 @@ const handleCategorySelect = async (categoryId: string) => {
       </div>
 
       <!-- 资源网格列表 -->
-      <div v-else-if="resources.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4">
+      <TransitionGroup
+        v-else-if="filteredResources.length > 0"
+        tag="div"
+        name="list"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4"
+      >
         <ResourceCard
-          v-for="resource in resources"
+          v-for="resource in filteredResources"
           :key="resource.id"
           :resource="resource"
+          @copy="triggerToast"
         />
-      </div>
+      </TransitionGroup>
 
       <!-- 空状态 -->
       <div v-else class="text-center py-20 text-gray-500">
@@ -103,5 +152,24 @@ const handleCategorySelect = async (categoryId: string) => {
     <footer class="bg-white py-6 text-center text-xs text-gray-400 mt-10">
       <p>© 2026 资源聚合网. Powered by Vue 3 & Vite.</p>
     </footer>
+
+    <!-- 全局 Toast -->
+    <Toast :show="showToast" :message="toastMessage" />
   </div>
 </template>
+
+<style>
+/* 列表过渡动画 */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.3s ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.list-move {
+  transition: transform 0.3s ease;
+}
+</style>
