@@ -38,7 +38,8 @@ async function getData() {
           const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
           let imageUrl = '';
-          if (node.ico) {
+          // Only use the ico field if p_ico === 1. Otherwise it's a false inheritance from Lanzou API.
+          if (node.ico && node.p_ico === 1) {
             imageUrl = `https://image.dmpdmp.com/image/ico/${node.ico}`;
           }
 

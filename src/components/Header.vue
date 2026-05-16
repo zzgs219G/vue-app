@@ -17,8 +17,8 @@ const emit = defineEmits<{
   <header class="bg-white shadow-sm sticky top-0 z-20">
     <div class="max-w-5xl mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
       <div @click="emit('update:modelValue', '')" class="cursor-pointer">
-        <h1 class="text-2xl font-bold text-indigo-600 tracking-tight">AI资源聚合</h1>
-        <p class="text-sm text-gray-500 mt-1">你的云端百宝箱 • 专注蓝奏云资源分享</p>
+        <h1 class="text-2xl font-bold text-indigo-600 tracking-tight">AI聚合导航</h1>
+        <p class="text-sm text-gray-500 mt-1">网盘资源 • 实用工具 • 智能体验一站式聚合</p>
       </div>
 
       <!-- 搜索框 -->
@@ -27,7 +27,7 @@ const emit = defineEmits<{
           :value="modelValue"
           @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           type="text"
-          placeholder="搜索资源..."
+          placeholder="搜索当前模块..."
           class="w-full md:w-64 px-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow pr-10"
         />
         <!-- 清除按钮 -->

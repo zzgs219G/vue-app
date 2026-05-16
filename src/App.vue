@@ -1,24 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import type { Tag, Item } from './types';
-import { getTags, getList } from './api';
+import { ref } from 'vue';
 
 import Header from './components/Header.vue';
-import TagList from './components/TagList.vue';
-import ItemCard from './components/ItemCard.vue';
+import LanzouModule from './components/LanzouModule.vue';
 import Toast from './components/Toast.vue';
 
 /**
  * 根组件 App.vue
- * 所有的状态管理都在这里，不使用 Vue Router。
- * 这样的结构非常扁平，适合在手机上快速查看和修改代码。
+ * 宏观聚合导航层，负责在不同的工具模块之间切换。
  */
 
-// 状态定义
-const tags = ref<Tag[]>([]);
-const list = ref<Item[]>([]);
-const activeTagId = ref<string>('all');
+// 宏观状态定义
+const currentModule = ref<string>('lanzou'); // 默认显示蓝奏云网盘模块
 const searchQuery = ref<string>('');
+
+// 定义所有可用的顶级模块 (未来可以无限扩展)
+const topModules = [
+  { id: 'lanzou', name: '网盘资源', icon: '☁️' },
+  { id: 'video', name: '短视频去水印', icon: '🎬' },
+  { id: 'images', name: 'AI图床', icon: '🖼️' },
+  { id: 'wallpaper', name: '精选壁纸', icon: '📱' },
+];
 
 // Toast 状态
 const showToast = ref(false);
@@ -35,92 +37,48 @@ const triggerToast = (msg: string) => {
   }, 2000);
 };
 
-/**
- * 过滤后的单文件列表
- * 根据搜索关键词和当前标签进行实时过滤
- */
-const filteredList = computed(() => {
-  let result = list.value;
-
-  // 搜索过滤
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase().trim();
-    result = result.filter(item =>
-      item.title.toLowerCase().includes(query) ||
-      item.description.toLowerCase().includes(query)
-    );
-  }
-
-  return result;
-});
-
-/**
- * 组件初始化加载数据
- */
-onMounted(async () => {
-  try {
-    const [loadedTags, loadedList] = await Promise.all([
-      getTags(),
-      getList('all')
-    ]);
-    tags.value = loadedTags;
-    list.value = loadedList;
-  } catch (error) {
-    console.error('加载数据失败:', error);
-  }
-});
-
-/**
- * 处理分类切换逻辑
- * @param tagId 选中的标签ID
- */
-const handleTagSelect = async (tagId: string) => {
-  if (activeTagId.value === tagId) return;
-
-  activeTagId.value = tagId;
-  try {
-    list.value = await getList(tagId);
-  } catch (error) {
-    console.error('切换标签失败:', error);
-  }
-};
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="min-h-screen flex flex-col bg-gray-50">
     <!-- 顶部导航 -->
     <Header v-model="searchQuery" />
 
-    <!-- 分类筛选栏 -->
-    <div class="bg-white/80 backdrop-blur-md sticky top-[76px] md:top-[88px] z-10 border-b border-gray-100">
-      <TagList
-        :tags="tags"
-        :active-tag-id="activeTagId"
-        @select="handleTagSelect"
-      />
+    <!-- 顶级模块切换栏 (类似导航网站的顶部菜单) -->
+    <div class="bg-white border-b border-gray-200 sticky top-[76px] md:top-[88px] z-20 shadow-sm">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex overflow-x-auto gap-4 scrollbar-hide">
+        <button
+          v-for="mod in topModules"
+          :key="mod.id"
+          @click="currentModule = mod.id"
+          class="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-colors"
+          :class="[
+            currentModule === mod.id
+              ? 'bg-indigo-50 text-indigo-700'
+              : 'text-gray-600 hover:bg-gray-100'
+          ]"
+        >
+          <span>{{ mod.icon }}</span>
+          <span>{{ mod.name }}</span>
+        </button>
+      </div>
     </div>
 
-    <!-- 主体内容区 -->
-    <main class="flex-grow p-4 max-w-5xl mx-auto w-full">
+    <!-- 主体内容区：根据 currentModule 动态显示不同模块 -->
+    <main class="flex-grow flex flex-col items-center">
 
-      <!-- 资源网格列表 -->
-      <TransitionGroup
-        v-if="filteredList.length > 0"
-        tag="div"
-        name="list"
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4"
-      >
-        <ItemCard
-          v-for="item in filteredList"
-          :key="item.id"
-          :item="item"
-          @copy="triggerToast"
-        />
-      </TransitionGroup>
+      <!-- 模块1：蓝奏云资源 -->
+      <LanzouModule
+        v-if="currentModule === 'lanzou'"
+        :search-query="searchQuery"
+        @copy="triggerToast"
+      />
 
-      <!-- 空状态 -->
-      <div v-else class="text-center py-20 text-gray-500">
-        <p>暂无文件。</p>
+      <!-- 占位模块：其他建设中的功能 -->
+      <div v-else class="flex flex-col items-center justify-center py-32 text-center">
+        <div class="text-6xl mb-4">🚧</div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">模块建设中</h2>
+        <p class="text-gray-500">此 AI 聚合功能尚未开放，敬请期待！</p>
       </div>
 
     </main>
