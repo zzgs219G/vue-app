@@ -28,4 +28,5 @@ export interface Item {
   // 补充信息
   createdAt: string;   // 资源的收录时间 (ISO格式字符串)
   icon?: string;       // (可选) 资源的图标 URL，可为空
+  fallbackIcon?: string; // (可选) 没有自定义图标时的默认文字图标，如 'apk'
 }

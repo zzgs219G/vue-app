@@ -52,6 +52,13 @@ const copyPassword = async (pwd: string) => {
           class="w-10 h-10 object-cover rounded-xl shadow-sm border border-gray-100 flex-shrink-0"
           alt="icon"
         />
+        <!-- 文字默认图标回退 -->
+        <div
+          v-else-if="item.fallbackIcon"
+          class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-500 text-[10px] font-bold rounded-xl shadow-sm border border-gray-100 flex-shrink-0 uppercase"
+        >
+          {{ item.fallbackIcon }}
+        </div>
         <h3 class="text-lg font-bold text-gray-800 line-clamp-2 leading-tight">
           {{ item.title }}
         </h3>

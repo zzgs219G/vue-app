@@ -50,7 +50,8 @@ async function getData() {
             lanzaoUrl: node.shareUrl,
             createdAt: todayStr, // Keep format compatible
             password: '', // empty as we might not know
-            icon: imageUrl // URL of the app icon
+            icon: imageUrl, // URL of the app icon if it exists
+            fallbackIcon: node.icon || 'file' // e.g. 'apk', 'zip'
           });
         }
         console.log(`  -> Found ${nodes.length} items`);
