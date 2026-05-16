@@ -3,6 +3,7 @@ import { ref } from 'vue';
 
 import Header from './components/Header.vue';
 import LanzouModule from './components/LanzouModule.vue';
+import VideoModule from './components/VideoModule.vue';
 import Toast from './components/Toast.vue';
 
 /**
@@ -65,7 +66,7 @@ const triggerToast = (msg: string) => {
     </div>
 
     <!-- 主体内容区：根据 currentModule 动态显示不同模块 -->
-    <main class="flex-grow flex flex-col items-center">
+    <main class="flex-grow flex flex-col items-center w-full">
 
       <!-- 模块1：蓝奏云资源 -->
       <LanzouModule
@@ -74,8 +75,14 @@ const triggerToast = (msg: string) => {
         @copy="triggerToast"
       />
 
+      <!-- 模块2：短视频去水印 -->
+      <VideoModule
+        v-else-if="currentModule === 'video'"
+        @copy="triggerToast"
+      />
+
       <!-- 占位模块：其他建设中的功能 -->
-      <div v-else class="flex flex-col items-center justify-center py-32 text-center">
+      <div v-else class="flex flex-col items-center justify-center py-32 text-center w-full">
         <div class="text-6xl mb-4">🚧</div>
         <h2 class="text-2xl font-bold text-gray-800 mb-2">模块建设中</h2>
         <p class="text-gray-500">此 AI 聚合功能尚未开放，敬请期待！</p>
