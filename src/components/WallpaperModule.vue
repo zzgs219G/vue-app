@@ -7,11 +7,11 @@ const emit = defineEmits<{
 
 // 定义分类标签，并绑定真实API的请求参数
 const tags = [
-  { id: 'mobile', name: '📱 手机壁纸', param: 'method=mobile', aspect: 'aspect-[9/16]' },
-  { id: 'pc', name: '💻 电脑/2K', param: 'method=pc', aspect: 'aspect-video' },
-  { id: 'anime', name: '🌸 二次元', param: 'lx=dongman', aspect: 'aspect-video' },
-  { id: 'portrait', name: '💃 真人妹子', param: 'lx=meizi', aspect: 'aspect-video' },
-  { id: 'scenery', name: '🏞️ 随机风景', param: 'lx=suiji', aspect: 'aspect-video' }
+  { id: 'mobile', name: '📱 手机壁纸', endpoint: 'btstu', param: 'method=mobile', aspect: 'aspect-[9/16]' },
+  { id: 'pc', name: '💻 电脑/2K', endpoint: 'btstu', param: 'method=pc', aspect: 'aspect-video' },
+  { id: 'anime', name: '🌸 二次元', endpoint: 'btstu', param: 'lx=dongman', aspect: 'aspect-video' },
+  { id: 'portrait', name: '💃 真人妹子', endpoint: 'btstu', param: 'lx=meizi', aspect: 'aspect-video' },
+  { id: 'scenery', name: '🏞️ 新浪高画质风景', endpoint: 'paugram', param: 'source=sina', aspect: 'aspect-video' }
 ];
 
 const activeTagId = ref<string>('mobile');
@@ -39,37 +39,41 @@ const fetchMoreWallpapers = async () => {
   const tagData = currentTag ? currentTag : tags[0]!;
 
   try {
-    // API btstu 每次只返回一张，所以我们并发请求 8 张来构成瀑布流
-    const promises = Array.from({ length: 8 }).map(async (_, index) => {
-      const apiUrl = `https://api.btstu.cn/sjbz/api.php?format=json&${tagData.param}`;
-      const res = await fetch(apiUrl);
-      if (!res.ok) throw new Error('API Error');
-      const data = await res.json();
+    // 采用直接拼装图片直链的方式绕过浏览器 fetch CORS 限制。
+    // 每次滑动直接生成 8 个带有唯一随机参数（防缓存）的图片直链
+    const fetchedWallpapers = Array.from({ length: 8 }).map((_, index) => {
+      const randId = Math.random().toString(36).substring(7) + Date.now();
+      let directUrl = '';
+      let authorName = '精选图库';
 
-      if (data && data.code === '200' && data.imgurl) {
-        return {
-          id: `${page}-${index}-${Date.now()}`,
-          url: data.imgurl,
-          thumbnail: data.imgurl, // API returns a single URL, use it for both
-          author: `精选图库`,
-          aspectClass: tagData.aspect
-        };
+      if (tagData.endpoint === 'paugram') {
+        directUrl = `https://api.paugram.com/wallpaper/?${tagData.param}&rand=${randId}`;
+        authorName = '新浪精选';
+      } else {
+        // 对于 BTSTU，如果不传 format=json，它默认会返回 302 图片直链跳转。
+        // 这完美契合我们 <img> 直接加载的需求。
+        directUrl = `https://api.btstu.cn/sjbz/api.php?${tagData.param}&rand=${randId}`;
       }
-      return null;
+
+      return {
+        id: `${page}-${index}-${randId}`,
+        url: directUrl,
+        thumbnail: directUrl,
+        author: authorName,
+        aspectClass: tagData.aspect
+      };
     });
 
-    const results = await Promise.all(promises);
-
-    // 过滤掉失败的空数据
-    const fetchedWallpapers = results.filter(item => item !== null) as Wallpaper[];
-
-    wallpapers.value.push(...fetchedWallpapers);
-    page++;
+    // 为了让瀑布流更有真实感，稍微延时一下假装在加载
+    setTimeout(() => {
+      wallpapers.value.push(...fetchedWallpapers);
+      page++;
+      isLoading.value = false;
+    }, 400);
 
   } catch (error) {
-    console.error('Failed to fetch wallpapers', error);
-    emit('copy', '获取壁纸失败，请稍后再试');
-  } finally {
+    console.error('Failed to generate wallpaper urls', error);
+    emit('copy', '生成壁纸链接失败');
     isLoading.value = false;
   }
 };
@@ -85,14 +89,25 @@ const switchTag = (tagId: string) => {
 
 // 监听图片加载失败，直接在列表中踢出该图片
 const handleImageError = (id: string) => {
+  const originalLength = wallpapers.value.length;
   wallpapers.value = wallpapers.value.filter(wp => wp.id !== id);
+  if (wallpapers.value.length === 0 && originalLength > 0) {
+      failedAttempts++;
+  }
 };
 
 // 启动无限滚动 Observer
+let failedAttempts = 0; // 防止无限死循环
+
 const setupObserver = () => {
   observer = new IntersectionObserver((entries) => {
     const target = entries[0];
     if (target && target.isIntersecting) {
+      if (failedAttempts > 3) {
+        console.warn('Too many failures, stopping infinite scroll.');
+        isLoading.value = false;
+        return;
+      }
       fetchMoreWallpapers();
     }
   }, {
@@ -154,11 +169,13 @@ const downloadWallpaper = async (url: string) => {
           :class="wp.aspectClass"
           @click="downloadWallpaper(wp.url)"
         >
-          <!-- 图片懒加载，加载失败触发 @error 自动销毁 -->
+          <!-- 图片懒加载，加载失败触发 @error 自动销毁。加入 referrerpolicy="no-referrer" 破解防盗链 -->
           <img
             :src="wp.thumbnail"
             loading="lazy"
+            referrerpolicy="no-referrer"
             @error="handleImageError(wp.id)"
+            @load="failedAttempts = 0"
             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             alt="Wallpaper"
           />
