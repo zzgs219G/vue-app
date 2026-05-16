@@ -56,7 +56,7 @@ const filteredList = computed(() => {
 <template>
   <div class="w-full">
     <!-- 蓝奏云模块专属二级标签栏 -->
-    <div class="bg-white/80 backdrop-blur-md sticky top-[132px] md:top-[144px] z-10 border-b border-gray-100">
+    <div class="bg-white/80 backdrop-blur-md sticky top-[76px] md:top-[88px] z-10 border-b border-gray-100">
       <TagList
         :tags="tags"
         :active-tag-id="activeTagId"

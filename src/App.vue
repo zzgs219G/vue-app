@@ -44,22 +44,22 @@ const triggerToast = (msg: string) => {
     <!-- 顶部导航 -->
     <Header v-model="searchQuery" />
 
-    <!-- 顶级模块切换栏 (类似导航网站的顶部菜单) -->
-    <div class="bg-white border-b border-gray-200 sticky top-[76px] md:top-[88px] z-20 shadow-sm">
-      <div class="max-w-5xl mx-auto px-4 py-3 flex overflow-x-auto gap-4 scrollbar-hide">
+    <!-- 顶级模块导航区域 (网格平铺布局，适合移动端展现更多功能) -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+      <div class="max-w-5xl mx-auto px-4 py-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
         <button
           v-for="mod in topModules"
           :key="mod.id"
           @click="currentModule = mod.id"
-          class="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-colors"
+          class="flex flex-col items-center justify-center p-3 rounded-xl transition-all border shadow-sm hover:shadow-md"
           :class="[
             currentModule === mod.id
-              ? 'bg-indigo-50 text-indigo-700'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+              : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'
           ]"
         >
-          <span>{{ mod.icon }}</span>
-          <span>{{ mod.name }}</span>
+          <span class="text-2xl mb-1 block">{{ mod.icon }}</span>
+          <span class="text-xs font-medium">{{ mod.name }}</span>
         </button>
       </div>
     </div>
