@@ -26,8 +26,8 @@ const emit = defineEmits<{
       class="whitespace-nowrap px-5 py-2 rounded-full text-sm font-medium transition-colors"
       :class="[
         activeTagId === tag.id
-          ? 'bg-indigo-600 text-white shadow-md'
-          : 'bg-white text-gray-600 hover:bg-indigo-50 border border-gray-200'
+          ? 'bg-indigo-600 text-white shadow-md dark:bg-indigo-500'
+          : 'bg-white text-gray-600 hover:bg-indigo-50 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'
       ]"
     >
       {{ tag.name }}
