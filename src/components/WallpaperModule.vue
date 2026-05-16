@@ -5,13 +5,13 @@ const emit = defineEmits<{
   (e: 'copy', msg: string): void;
 }>();
 
-// 定义分类标签，并绑定真实API的请求参数
+// 定义分类标签，并绑定 Wallhaven API 的请求参数
 const tags = [
-  { id: 'mobile', name: '📱 手机壁纸', endpoint: 'btstu', param: 'method=mobile', aspect: 'aspect-[9/16]' },
-  { id: 'pc', name: '💻 电脑/2K', endpoint: 'btstu', param: 'method=pc', aspect: 'aspect-video' },
-  { id: 'anime', name: '🌸 二次元', endpoint: 'btstu', param: 'lx=dongman', aspect: 'aspect-video' },
-  { id: 'portrait', name: '💃 真人妹子', endpoint: 'btstu', param: 'lx=meizi', aspect: 'aspect-video' },
-  { id: 'scenery', name: '🏞️ 新浪高画质风景', endpoint: 'paugram', param: 'source=sina', aspect: 'aspect-video' }
+  { id: 'mobile', name: '📱 手机壁纸', param: 'ratios=9x16,10x16,9x18', aspect: 'aspect-[9/16]' },
+  { id: 'pc', name: '💻 电脑/2K', param: 'ratios=16x9,21x9', aspect: 'aspect-video' },
+  { id: 'anime', name: '🌸 二次元', param: 'q=anime', aspect: 'aspect-video' },
+  { id: 'people', name: '💃 真人', param: 'q=people', aspect: 'aspect-video' },
+  { id: 'scenery', name: '🏞️ 高画质风景', param: 'q=nature', aspect: 'aspect-video' }
 ];
 
 const activeTagId = ref<string>('mobile');
@@ -30,7 +30,9 @@ const scrollTrigger = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
 let page = 1;
 
-// 真实接口批量拉取壁纸
+// 读取本地生成的静态 壁纸数据
+let allStaticWallpapers: Record<string, any[]> = {};
+
 const fetchMoreWallpapers = async () => {
   if (isLoading.value) return;
   isLoading.value = true;
@@ -39,41 +41,46 @@ const fetchMoreWallpapers = async () => {
   const tagData = currentTag ? currentTag : tags[0]!;
 
   try {
-    // 采用直接拼装图片直链的方式绕过浏览器 fetch CORS 限制。
-    // 每次滑动直接生成 8 个带有唯一随机参数（防缓存）的图片直链
-    const fetchedWallpapers = Array.from({ length: 8 }).map((_, index) => {
-      const randId = Math.random().toString(36).substring(7) + Date.now();
-      let directUrl = '';
-      let authorName = '精选图库';
+    // 第一次加载时，拉取全量本地静态数据
+    if (Object.keys(allStaticWallpapers).length === 0) {
+      const res = await fetch('/wallpapers_data.json');
+      if (!res.ok) throw new Error('Failed to load static wallpapers data');
+      allStaticWallpapers = await res.json();
+    }
 
-      if (tagData.endpoint === 'paugram') {
-        directUrl = `https://api.paugram.com/wallpaper/?${tagData.param}&rand=${randId}`;
-        authorName = '新浪精选';
-      } else {
-        // 对于 BTSTU，如果不传 format=json，它默认会返回 302 图片直链跳转。
-        // 这完美契合我们 <img> 直接加载的需求。
-        directUrl = `https://api.btstu.cn/sjbz/api.php?${tagData.param}&rand=${randId}`;
-      }
+    const categoryData = allStaticWallpapers[tagData.id] || [];
 
-      return {
-        id: `${page}-${index}-${randId}`,
-        url: directUrl,
-        thumbnail: directUrl,
-        author: authorName,
+    // 每次无感滚动，我们从打包好的静态数据里切出 8 张展示，模拟无限滚动
+    const startIndex = (page - 1) * 8;
+    const endIndex = startIndex + 8;
+    const pagedItems = categoryData.slice(startIndex, endIndex);
+
+    if (pagedItems.length > 0) {
+      const fetchedWallpapers = pagedItems.map((item: any) => ({
+        id: item.id + '-' + page, // 防冲突
+        url: item.url,
+        thumbnail: item.thumbnail,
+        author: item.author,
         aspectClass: tagData.aspect
-      };
-    });
+      }));
 
-    // 为了让瀑布流更有真实感，稍微延时一下假装在加载
-    setTimeout(() => {
-      wallpapers.value.push(...fetchedWallpapers);
-      page++;
+      // 稍微延时假装网络加载，提升视觉体验
+      setTimeout(() => {
+        wallpapers.value.push(...fetchedWallpapers);
+        page++;
+        isLoading.value = false;
+      }, 300);
+    } else {
+      // 触底了（预抓取的数据被看完了）
       isLoading.value = false;
-    }, 400);
+      if (page > 1) {
+          emit('copy', '已经到底啦~');
+      }
+    }
 
   } catch (error) {
-    console.error('Failed to generate wallpaper urls', error);
-    emit('copy', '生成壁纸链接失败');
+    console.error('Failed to load local wallpapers', error);
+    emit('copy', '加载本地壁纸数据失败');
     isLoading.value = false;
   }
 };
@@ -89,25 +96,14 @@ const switchTag = (tagId: string) => {
 
 // 监听图片加载失败，直接在列表中踢出该图片
 const handleImageError = (id: string) => {
-  const originalLength = wallpapers.value.length;
   wallpapers.value = wallpapers.value.filter(wp => wp.id !== id);
-  if (wallpapers.value.length === 0 && originalLength > 0) {
-      failedAttempts++;
-  }
 };
 
 // 启动无限滚动 Observer
-let failedAttempts = 0; // 防止无限死循环
-
 const setupObserver = () => {
   observer = new IntersectionObserver((entries) => {
     const target = entries[0];
     if (target && target.isIntersecting) {
-      if (failedAttempts > 3) {
-        console.warn('Too many failures, stopping infinite scroll.');
-        isLoading.value = false;
-        return;
-      }
       fetchMoreWallpapers();
     }
   }, {
@@ -169,13 +165,11 @@ const downloadWallpaper = async (url: string) => {
           :class="wp.aspectClass"
           @click="downloadWallpaper(wp.url)"
         >
-          <!-- 图片懒加载，加载失败触发 @error 自动销毁。加入 referrerpolicy="no-referrer" 破解防盗链 -->
+          <!-- 图片懒加载，加载失败触发 @error 自动销毁 -->
           <img
             :src="wp.thumbnail"
             loading="lazy"
-            referrerpolicy="no-referrer"
             @error="handleImageError(wp.id)"
-            @load="failedAttempts = 0"
             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             alt="Wallpaper"
           />
