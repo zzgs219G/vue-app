@@ -7,31 +7,31 @@ const emit = defineEmits<{
 
 const videoUrl = ref('');
 
-// 定义一些稳定的第三方去水印解析网站
+// 定义一些稳定的国内抖音去水印解析平台聚合
 const parsingEngines = [
   {
-    id: 'snaptik',
-    name: 'SnapTik (国际)',
-    desc: '最强大的 TikTok 无水印解析工具',
+    id: 'qishuiyin1',
+    name: '去水印工具 1 号',
+    desc: '国内稳定节点，纯净无广告',
     icon: '⚡',
     color: 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100',
-    urlPattern: 'https://snaptik.app/'
+    urlPattern: 'https://www.douyin.wtf/'
   },
   {
-    id: 'ssstik',
-    name: 'SSSTik (国际)',
-    desc: '备用 TikTok 下载，支持 MP3',
-    icon: '🎵',
+    id: 'qishuiyin2',
+    name: '去水印工具 2 号',
+    desc: '备用高速通道，支持图集解析',
+    icon: '🖼️',
     color: 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100',
-    urlPattern: 'https://ssstik.io/'
+    urlPattern: 'https://douyin.wtf/'
   },
   {
-    id: 'douyin',
-    name: '抖音解析 (国内)',
-    desc: '支持国内抖音无水印解析提取',
+    id: 'qishuiyin3',
+    name: '去水印工具 3 号',
+    desc: '深度解析引擎，极速下载',
     icon: '🔥',
     color: 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100',
-    urlPattern: 'https://www.douyin.wtf/' // A placeholder for a generic douyin tool site
+    urlPattern: 'https://dy.kukutool.com/'
   }
 ];
 
@@ -65,8 +65,8 @@ const handleClear = () => {
       <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl mb-4 text-3xl shadow-sm">
         🎬
       </div>
-      <h2 class="text-3xl font-bold text-gray-800 mb-3">短视频无水印解析</h2>
-      <p class="text-gray-500">支持 TikTok、抖音等主流平台。粘贴链接，一键直达全网最强解析引擎。</p>
+      <h2 class="text-3xl font-bold text-gray-800 mb-3">抖音无水印解析</h2>
+      <p class="text-gray-500">专属国内短视频/图集解析。粘贴口令链接，一键直达免嗅探提取引擎。</p>
     </div>
 
     <!-- 输入框区域 -->
