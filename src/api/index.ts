@@ -1,25 +1,25 @@
-import type { Category, Resource } from '../types';
+import type { Tag, Item } from '../types';
 
-let cachedData: { categories: Category[]; resources: Resource[] } | null = null;
+let cachedData: { tags: Tag[]; list: Item[] } | null = null;
 
 async function fetchAllData() {
   if (cachedData) return cachedData;
-  // 直接读取你放在 public 目录下的静态 json
-  const response = await fetch('/data.json');
+  // 直接读取静态打包的 all_data.json
+  const response = await fetch('/all_data.json');
   if (!response.ok) throw new Error('读取静态数据失败');
   cachedData = await response.json();
   return cachedData!;
 }
 
-export async function getCategories(): Promise<Category[]> {
+export async function getTags(): Promise<Tag[]> {
   const data = await fetchAllData();
-  return data.categories;
+  return data.tags;
 }
 
-export async function getResources(categoryId: string = 'all'): Promise<Resource[]> {
+export async function getList(tagId: string = 'all'): Promise<Item[]> {
   const data = await fetchAllData();
-  if (categoryId === 'all') {
-    return data.resources;
+  if (tagId === 'all') {
+    return data.list;
   }
-  return data.resources.filter(r => r.categoryId === categoryId);
+  return data.list.filter(item => item.tagId === tagId);
 }

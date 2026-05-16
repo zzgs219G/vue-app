@@ -7,20 +7,19 @@
  * 资源分类模型
  * 用于顶部/侧边栏的分类筛选
  */
-export interface Category {
+export interface Tag {
   id: string;   // 分类ID
   name: string; // 分类名称，如 "AI工具", "设计素材"
 }
 
 /**
- * 蓝奏云资源模型
- * 这个结构直接对应将来要存入 Cloudflare D1 或 KV 的数据表结构
+ * 蓝奏云单文件模型
  */
-export interface Resource {
+export interface Item {
   id: string;          // 资源的唯一标识符
   title: string;       // 资源名称标题
   description: string; // 资源的简短描述
-  categoryId: string;  // 所属分类的 ID
+  tagId: string;       // 所属分类的 ID
 
   // 蓝奏云特定字段
   lanzaoUrl: string;   // 蓝奏云分享链接
