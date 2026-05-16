@@ -37,6 +37,11 @@ async function getData() {
           const now = new Date();
           const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
+          let imageUrl = '';
+          if (node.ico) {
+            imageUrl = `https://image.dmpdmp.com/image/ico/${node.ico}`;
+          }
+
           list.push({
             id: node.id,
             title: node.name_all,
@@ -45,7 +50,7 @@ async function getData() {
             lanzaoUrl: node.shareUrl,
             createdAt: todayStr, // Keep format compatible
             password: '', // empty as we might not know
-            icon: node.icon || '' // file extension type (e.g. 'apk', 'zip')
+            icon: imageUrl // URL of the app icon
           });
         }
         console.log(`  -> Found ${nodes.length} items`);
