@@ -5,13 +5,13 @@ const emit = defineEmits<{
   (e: 'copy', msg: string): void;
 }>();
 
-// 定义分类标签
+// 定义分类标签，并绑定真实API的请求参数
 const tags = [
-  { id: 'mobile', name: '📱 手机壁纸', width: 400, height: 800, aspect: 'aspect-[1/2]' },
-  { id: 'pc', name: '💻 电脑/2K', width: 1920, height: 1080, aspect: 'aspect-video' },
-  { id: 'anime', name: '🌸 二次元', width: 800, height: 1200, aspect: 'aspect-[2/3]' },
-  { id: 'scenery', name: '🏞️ 风景', width: 1080, height: 1920, aspect: 'aspect-[9/16]' },
-  { id: 'portrait', name: '💃 真人', width: 800, height: 1200, aspect: 'aspect-[2/3]' }
+  { id: 'mobile', name: '📱 手机壁纸', param: 'method=mobile', aspect: 'aspect-[9/16]' },
+  { id: 'pc', name: '💻 电脑/2K', param: 'method=pc', aspect: 'aspect-video' },
+  { id: 'anime', name: '🌸 二次元', param: 'lx=dongman', aspect: 'aspect-video' },
+  { id: 'portrait', name: '💃 真人妹子', param: 'lx=meizi', aspect: 'aspect-video' },
+  { id: 'scenery', name: '🏞️ 随机风景', param: 'lx=suiji', aspect: 'aspect-video' }
 ];
 
 const activeTagId = ref<string>('mobile');
@@ -30,7 +30,7 @@ const scrollTrigger = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
 let page = 1;
 
-// 获取数据 (模拟接口无感加载)
+// 真实接口批量拉取壁纸
 const fetchMoreWallpapers = async () => {
   if (isLoading.value) return;
   isLoading.value = true;
@@ -39,30 +39,37 @@ const fetchMoreWallpapers = async () => {
   const tagData = currentTag ? currentTag : tags[0]!;
 
   try {
-    // Generate new mock images
-    const fetched = Array.from({ length: 12 }).map((_, index) => {
-      // 随机生成一个ID避免重复
-      const id = Math.floor(Math.random() * 1000) + (page * 100) + index;
+    // API btstu 每次只返回一张，所以我们并发请求 8 张来构成瀑布流
+    const promises = Array.from({ length: 8 }).map(async (_, index) => {
+      const apiUrl = `https://api.btstu.cn/sjbz/api.php?format=json&${tagData.param}`;
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error('API Error');
+      const data = await res.json();
 
-      // 使用 picsum 或者其他提供图片的占位服务。因为是模拟，所以通过加上随机数防止缓存
-      return {
-        id: id.toString(),
-        url: `https://picsum.photos/${tagData.width}/${tagData.height}?random=${id}`,
-        thumbnail: `https://picsum.photos/${Math.floor(tagData.width/2)}/${Math.floor(tagData.height/2)}?random=${id}`,
-        author: `精选图库 ${id}`,
-        aspectClass: tagData.aspect
-      };
+      if (data && data.code === '200' && data.imgurl) {
+        return {
+          id: `${page}-${index}-${Date.now()}`,
+          url: data.imgurl,
+          thumbnail: data.imgurl, // API returns a single URL, use it for both
+          author: `精选图库`,
+          aspectClass: tagData.aspect
+        };
+      }
+      return null;
     });
 
-    // 模拟网络延迟
-    setTimeout(() => {
-      wallpapers.value.push(...fetched);
-      page++;
-      isLoading.value = false;
-    }, 600);
+    const results = await Promise.all(promises);
+
+    // 过滤掉失败的空数据
+    const fetchedWallpapers = results.filter(item => item !== null) as Wallpaper[];
+
+    wallpapers.value.push(...fetchedWallpapers);
+    page++;
 
   } catch (error) {
     console.error('Failed to fetch wallpapers', error);
+    emit('copy', '获取壁纸失败，请稍后再试');
+  } finally {
     isLoading.value = false;
   }
 };
@@ -138,8 +145,8 @@ const downloadWallpaper = async (url: string) => {
 
     <div class="w-full max-w-5xl mx-auto p-4 animate-fade-in mt-4">
       <!-- 瀑布流壁纸展示 -->
-      <!-- 动态调整列数以适应不同比例：横屏图（电脑）放少点，竖屏图（手机）放多点 -->
-      <div class="grid gap-4" :class="activeTagId === 'pc' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'">
+      <!-- 动态调整列数以适应不同比例：横屏图（电脑/动漫等）放少点，竖屏图（手机）放多点 -->
+      <div class="grid gap-4" :class="activeTagId === 'mobile' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2'">
         <div
           v-for="wp in wallpapers"
           :key="wp.id"
