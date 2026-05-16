@@ -44,7 +44,8 @@ async function getData() {
             tagId: resource.id,
             lanzaoUrl: node.shareUrl,
             createdAt: todayStr, // Keep format compatible
-            password: '' // empty as we might not know
+            password: '', // empty as we might not know
+            icon: node.icon || '' // file extension type (e.g. 'apk', 'zip')
           });
         }
         console.log(`  -> Found ${nodes.length} items`);

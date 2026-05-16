@@ -44,12 +44,21 @@ const copyPassword = async (pwd: string) => {
 
     <!-- 头部：标题和分类标签 -->
     <div class="flex justify-between items-start mb-3 gap-2">
-      <h3 class="text-lg font-bold text-gray-800 line-clamp-2 leading-tight">
-        {{ item.title }}
-      </h3>
+      <div class="flex items-center gap-2">
+        <!-- 文件类型图标 -->
+        <span
+          v-if="item.icon"
+          class="flex-shrink-0 bg-indigo-50 text-indigo-500 text-xs font-bold px-2 py-1 rounded-md uppercase"
+        >
+          {{ item.icon }}
+        </span>
+        <h3 class="text-lg font-bold text-gray-800 line-clamp-2 leading-tight">
+          {{ item.title }}
+        </h3>
+      </div>
       <span
         v-if="isNew"
-        class="flex-shrink-0 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+        class="flex-shrink-0 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mt-1"
       >
         NEW
       </span>
