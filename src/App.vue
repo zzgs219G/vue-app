@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import type { Category, Resource } from './types';
-import { getCategories, getResources } from './api';
+import type { Tag, Item } from './types';
+import { getTags, getList } from './api';
 
 import Header from './components/Header.vue';
-import CategoryList from './components/CategoryList.vue';
-import ResourceCard from './components/ResourceCard.vue';
+import TagList from './components/TagList.vue';
+import ItemCard from './components/ItemCard.vue';
 import Toast from './components/Toast.vue';
 
 /**
  * 根组件 App.vue
- * 所有的状态管理（分类、资源列表、加载状态）都在这里，不使用 Vue Router。
+ * 所有的状态管理都在这里，不使用 Vue Router。
  * 这样的结构非常扁平，适合在手机上快速查看和修改代码。
  */
 
 // 状态定义
-const categories = ref<Category[]>([]);
-const resources = ref<Resource[]>([]);
-const activeCategoryId = ref<string>('all');
+const tags = ref<Tag[]>([]);
+const list = ref<Item[]>([]);
+const activeTagId = ref<string>('all');
 const searchQuery = ref<string>('');
-const isLoading = ref<boolean>(true);
 
 // Toast 状态
 const showToast = ref(false);
@@ -37,18 +36,18 @@ const triggerToast = (msg: string) => {
 };
 
 /**
- * 过滤后的资源列表
- * 根据搜索关键词和当前分类进行实时过滤
+ * 过滤后的单文件列表
+ * 根据搜索关键词和当前标签进行实时过滤
  */
-const filteredResources = computed(() => {
-  let result = resources.value;
+const filteredList = computed(() => {
+  let result = list.value;
 
   // 搜索过滤
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase().trim();
-    result = result.filter(res =>
-      res.title.toLowerCase().includes(query) ||
-      res.description.toLowerCase().includes(query)
+    result = result.filter(item =>
+      item.title.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query)
     );
   }
 
@@ -57,46 +56,32 @@ const filteredResources = computed(() => {
 
 /**
  * 组件初始化加载数据
- * 此处以后替换为 API 链接
  */
 onMounted(async () => {
   try {
-    isLoading.value = true;
-
-    // 并发请求分类和全部资源
-    const [cats, res] = await Promise.all([
-      getCategories(),
-      getResources('all')
+    const [loadedTags, loadedList] = await Promise.all([
+      getTags(),
+      getList('all')
     ]);
-
-    categories.value = cats;
-    resources.value = res;
-
+    tags.value = loadedTags;
+    list.value = loadedList;
   } catch (error) {
     console.error('加载数据失败:', error);
-  } finally {
-    isLoading.value = false;
   }
 });
 
 /**
  * 处理分类切换逻辑
- * 此处以后替换为 API 链接
- * @param categoryId 选中的分类ID
+ * @param tagId 选中的标签ID
  */
-const handleCategorySelect = async (categoryId: string) => {
-  if (activeCategoryId.value === categoryId) return;
+const handleTagSelect = async (tagId: string) => {
+  if (activeTagId.value === tagId) return;
 
-  activeCategoryId.value = categoryId;
-  isLoading.value = true;
-
+  activeTagId.value = tagId;
   try {
-    // 根据选中的分类拉取对应的资源数据
-    resources.value = await getResources(categoryId);
+    list.value = await getList(tagId);
   } catch (error) {
-    console.error('切换分类失败:', error);
-  } finally {
-    isLoading.value = false;
+    console.error('切换标签失败:', error);
   }
 };
 </script>
@@ -108,42 +93,34 @@ const handleCategorySelect = async (categoryId: string) => {
 
     <!-- 分类筛选栏 -->
     <div class="bg-white/80 backdrop-blur-md sticky top-[76px] md:top-[88px] z-10 border-b border-gray-100">
-      <CategoryList
-        :categories="categories"
-        :active-category-id="activeCategoryId"
-        @select="handleCategorySelect"
+      <TagList
+        :tags="tags"
+        :active-tag-id="activeTagId"
+        @select="handleTagSelect"
       />
     </div>
 
     <!-- 主体内容区 -->
     <main class="flex-grow p-4 max-w-5xl mx-auto w-full">
 
-      <!-- 加载中状态 -->
-      <div v-if="isLoading" class="flex justify-center items-center py-20">
-        <div class="animate-pulse flex flex-col items-center">
-          <div class="h-8 w-8 bg-indigo-200 rounded-full mb-4"></div>
-          <p class="text-gray-400 text-sm">正在加载资源...</p>
-        </div>
-      </div>
-
       <!-- 资源网格列表 -->
       <TransitionGroup
-        v-else-if="filteredResources.length > 0"
+        v-if="filteredList.length > 0"
         tag="div"
         name="list"
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4"
       >
-        <ResourceCard
-          v-for="resource in filteredResources"
-          :key="resource.id"
-          :resource="resource"
+        <ItemCard
+          v-for="item in filteredList"
+          :key="item.id"
+          :item="item"
           @copy="triggerToast"
         />
       </TransitionGroup>
 
       <!-- 空状态 -->
       <div v-else class="text-center py-20 text-gray-500">
-        <p>该分类下暂无资源。</p>
+        <p>暂无文件。</p>
       </div>
 
     </main>
